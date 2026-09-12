@@ -1,0 +1,10 @@
+# 개인 금융 데이터와 자격증명은 절대 커밋하지 않는다
+.env
+data/
+*.db
+*.sqlite
+*.xlsx
+*.csv
+__pycache__/
+*.pyc
+.pytest_cache/
