@@ -60,54 +60,11 @@ w = list(old_weekly); w[0] = 'DATA.archive.weekly["2026-08-31"] = {'; w[-1] = '}
 with io.open(NEWDATA, encoding="utf-8") as f:
     newdata = f.read().rstrip("\n").split("\n")
 
-# ── 렌더러·FORMAT NOTE 패치 (2026-09-14 수원 탭 추가). 각 앵커는 정확히 1회만 존재해야 한다 ──
-def patch(lines, anchor, replacement, name):
-    s = "\n".join(lines)
-    must(s.count(anchor) == 1, "patch anchor '%s' count=%d" % (name, s.count(anchor)))
-    return s.replace(anchor, replacement).split("\n")
-
-FORMAT_NOTE_ITEM7 = """   7. 수원 탭(2026-09-14 사용자 지시): sections.suwon 배열에 5~6건. 각 {title, summary, source, url, date, when(행사 일시 "9/18(금)~19(토) 17:30~21:30" 형태), place(장소)}.
-      소스 우선순위 ① 한국관광공사 TourAPI 행사/축제(areaCode 31·sigunguCode 13) ② 수원시청·수원문화재단 공지 ③ 인스타그램 공식 계정(@suwon_city·@suwoni_official·@suwon_sudc)은
-      반드시 Meta Graph API Business Discovery(토큰 IG_ACCESS_TOKEN·IG_USER_ID)로만 조회하고 스크래핑·로그인 자동화는 금지 ④ 뉴스 검색.
-      ①~③은 저장소의 suwon_events.py 한 번으로 시도하고, 도메인 차단·키 부재 시 ④로 대체한다. 지난 행사는 when 끝에 "(종료)"를 붙이고, 주간은 그 주 열린 행사 결과와 다음 주 예정을 섞는다.
-   8. 핫이슈(buzz) 선정 기준(2026-09-14 사용자 지시). "검색량이 많았나"가 아니라 "내일 누군가와 실제로 이야기할 만한가"로 고른다.
-      - 스포츠 경기 결과(우승·승패·순위·개인 기록)는 최대 1건, 그것도 월드컵·올림픽급 전국 관심사일 때만 넣는다. LCK 우승, 프로야구 순위, 골프 투어 우승, 감독 입국 같은 것은 넣지 않는다.
-      - 연예인의 사생활·가족·자녀 사진·SNS 신변잡기는 넣지 않는다. 연예 관련은 작품 공개, 산업 변화, 사회적 논란일 때만 올린다.
-      - 우선순위: ① 물가·생활비·세금·교통·통신·부동산처럼 생활에 직접 닿는 정책과 요금 ② 유가·환율·지수처럼 체감되는 경제 ③ 신제품·새 서비스 개시 ④ 사회적 논란 ⑤ 그 외.
-      - 각 항목의 summary 안에 "그래서 나에게 뭐가 달라지는가"를 한 문장으로 담을 수 없으면 탈락시킨다.
-      - 일요일·공휴일처럼 국내 뉴스가 비는 날은 스포츠·연예로 채우지 말고, 그 주 내내 이어진 생활 이슈(추석 준비, 요금 인상, 신제품 출시 등)를 끌어와 채운다. date는 목표일 이전이기만 하면 된다.
-   ==== */"""
-head = patch(head, "   ==== */", FORMAT_NOTE_ITEM7, "format-note-end")
-
-renderer = patch(renderer,
-    '  {key:"christian", label:"기독교"},\n];',
-    '  {key:"christian", label:"기독교"},\n  {key:"suwon", label:"📍 수원"},\n];',
-    "cats")
-
-EVENT_CARD = '''function eventCard(it){
-  const meta=[
-    it.when?`<span class="chip">📅 ${esc(it.when)}</span>`:"",
-    it.place?`<span class="chip">📍 ${esc(it.place)}</span>`:"",
-    it.source?`<span>${esc(it.source)}</span>`:"",
-    it.date?`<span>${esc(it.date)}</span>`:"",
-    it.url?`<a class="link" href="${esc(it.url)}" target="_blank" rel="noopener">원문 보기 →</a>`:""
-  ].filter(Boolean).join("");
-  return `<article class="card">
-    <h3>${it.url?`<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title)}</a>`:esc(it.title)}</h3>
-    <p>${esc(it.summary)}</p>
-    <div class="meta">${meta}</div>
-  </article>`;
-}
-
-function spark(vals, dir, dates, priceStr){'''
-renderer = patch(renderer, "function spark(vals, dir, dates, priceStr){", EVENT_CARD, "event-card")
-
-SUWON_BRANCH = '''  } else if(curC==="suwon"){
-    const arr = s.suwon||[];
-    html = arr.length ? `<div class="subhead">수원시 행사·축제 — 시청·문화재단·공식 SNS·뉴스 종합</div><div class="cards">${arr.map(eventCard).join("")}</div>` : `<div class="empty">${sel[curP]?"이 날짜에는 수원 행사가 수집되지 않았습니다.":"수원 행사 정보가 아직 준비되지 않았습니다."}</div>`;
-  } else {
-    const arr = s[curC]||[];'''
-renderer = patch(renderer, "  } else {\n    const arr = s[curC]||[];", SUWON_BRANCH, "suwon-branch")
+# ── 렌더러 패치 없음 ────────────────────────────────────────
+# 2026-09-15 기준 원본 아티팩트에는 수원 탭(HIDDEN_CATS·eventCard·.tab-more)과
+# FORMAT NOTE 7·8항이 이미 들어 있다. 따라서 여기서 렌더러를 손대면 안 된다.
+# 수원 탭은 CATS가 아니라 HIDDEN_CATS에 있어야 하고(기본 숨김), 탭 줄 끝 '···'
+# 버튼으로만 펼쳐진다. 원본에서 잘라온 renderer 조각을 그대로 붙여 쓴다.
 
 out = []
 out += head
