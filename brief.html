@@ -148,6 +148,30 @@ html,body{max-width:100%; overflow-x:hidden;}
 button.cal-day.has{color:var(--ink); background:var(--accent-soft); cursor:pointer; font-weight:600;}
 button.cal-day.has:hover{outline:2px solid var(--accent);}
 .cal-day.sel{background:var(--accent); color:#fff;}
+
+/* 수원 행사 달력 */
+.sw-cal{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 14px 12px; max-width:460px; margin-bottom:4px;}
+.sw-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:.92rem;}
+.sw-head button{border:0; background:none; color:var(--muted); cursor:pointer; font:inherit; padding:2px 10px; border-radius:6px;}
+.sw-head button:hover{color:var(--ink); background:var(--chip);}
+.sw-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:3px; text-align:center;}
+.sw-grid .dow{font-size:.7rem; color:var(--muted); padding:2px 0 4px;}
+.sw-day{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+  min-height:38px; border:0; background:none; font:inherit; border-radius:7px; color:var(--muted);
+  font-variant-numeric:tabular-nums; padding:3px 0;}
+.sw-day .d{font-size:.82rem; line-height:1.2;}
+.sw-day .dots{font-size:.5rem; line-height:1; letter-spacing:.08em; color:var(--accent); height:.62em;}
+.sw-day.pad{visibility:hidden;}
+button.sw-day.has{color:var(--ink); background:var(--accent-soft); cursor:pointer; font-weight:700;}
+button.sw-day.has:hover{outline:2px solid var(--accent);}
+button.sw-day.sel{background:var(--accent); color:#fff;}
+button.sw-day.sel .dots{color:#fff;}
+.sw-long{margin:-2px 0 9px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;}
+.sw-long .lbl{font-size:.7rem; font-weight:700; color:var(--muted); letter-spacing:.04em;}
+.sw-long .chip{font-size:.72rem; font-weight:600; background:var(--accent-soft); color:var(--accent); border-radius:5px; padding:2px 8px;}
+.sw-foot{margin-top:10px; font-size:.78rem; color:var(--muted); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.sw-reset{border:1px solid var(--accent); background:none; color:var(--accent); font:inherit; font-size:.76rem; font-weight:600; border-radius:6px; padding:3px 9px; cursor:pointer;}
+@media (max-width:520px){ .sw-cal{max-width:100%;} }
 .card.buzz{border-left:3px solid var(--up);}
 .card.buzz .kw{
   display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.02em;
@@ -243,6 +267,9 @@ footer{
       ①~③은 저장소의 suwon_events.py 한 번으로 시도하고, 도메인 차단·키 부재 시 ④로 대체한다. 지난 행사는 when 끝에 "(종료)"를 붙이고, 주간은 그 주 열린 행사 결과와 다음 주 예정을 섞는다.
       **수원 탭은 기본 숨김이다(2026-09-15 사용자 지시).** 렌더러의 CATS에는 넣지 말고 HIDDEN_CATS 배열에만 두며, 탭 줄 오른쪽 끝 '···'(.tab-more) 버튼을 눌러야 펼쳐진다.
       showHidden 상태는 저장하지 않으므로 새로 열 때마다 다시 숨겨진다. 재발행 시 CATS/HIDDEN_CATS 분리와 .tab-more 스타일·핸들러를 그대로 보존해라. 데이터(sections.suwon)는 숨김과 무관하게 매일 채운다.
+      **수원 탭 안에는 전용 행사 달력이 있다(2026-09-15 사용자 지시).** swDates()가 when 문자열에서 날짜를 뽑아 swCal()이 달력을 그리고, 날짜를 누르면 그날 행사만 보인다.
+      따라서 **when은 반드시 "9/18(금)~19(토) 17:30~21:30"처럼 M/D 숫자를 포함해 써라.** "9월 중순~10월"처럼 M/D가 없으면 달력에 안 찍히고 목록에만 남는다.
+      기간 행사는 "9/1(화)~9/30(수)"처럼 시작과 끝을 모두 적어야 그 사이 날짜가 전부 칠해진다. swDates/swCal/.sw-cal 스타일과 #content 클릭 핸들러도 재발행 시 그대로 보존해라.
    8. 핫이슈(buzz) 선정 기준(2026-09-14 사용자 지시). "검색량이 많았나"가 아니라 "내일 누군가와 실제로 이야기할 만한가"로 고른다.
       - 스포츠 경기 결과(우승·승패·순위·개인 기록)는 최대 1건, 그것도 월드컵·올림픽급 전국 관심사일 때만 넣는다. LCK 우승, 프로야구 순위, 골프 투어 우승, 감독 입국 같은 것은 넣지 않는다.
       - 연예인의 사생활·가족·자녀 사진·SNS 신변잡기는 넣지 않는다. 연예 관련은 작품 공개, 산업 변화, 사회적 논란일 때만 올린다.
@@ -6022,6 +6049,75 @@ function renderCal(keys){
     <div class="cal-grid">${dows}${cells}</div></div>`;
 }
 
+/* ── 수원 행사 달력 (2026-09-15 사용자 지시) ──
+   when 문자열("9/18(금)~19(토) 17:30~21:30", "9/9(수) ... (종료)")에서 날짜만 뽑아
+   달력에 표시한다. 시각(17:30~21:30)과 괄호는 먼저 지운 뒤 M/D 패턴을 읽는다. */
+let swMonth = null, swSel = null;
+
+function swDates(it){
+  const y0 = /^\d{4}/.test(it.date||"") ? +String(it.date).slice(0,4) : 2026;
+  let t = String(it.when||"")
+    .replace(/\d{1,2}\s*:\s*\d{2}/g, " ")
+    .replace(/\([^)]*\)/g, " ");
+  const out = new Set(), used = [];
+  const taken = i => used.some(u => i >= u[0] && i < u[1]);
+  const addSpan = (m1,d1,m2,d2) => {
+    const a = new Date(y0, m1-1, d1), b = new Date(y0, m2-1, d2);
+    if(isNaN(a) || isNaN(b) || b < a) return;
+    for(let x = new Date(a), n = 0; x <= b && n < 200; x.setDate(x.getDate()+1), n++){
+      out.add(`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`);
+    }
+  };
+  let re, m;
+  re = /(\d{1,2})\s*\/\s*(\d{1,2})\s*~\s*(\d{1,2})\s*\/\s*(\d{1,2})/g;
+  while((m = re.exec(t))){ addSpan(+m[1],+m[2],+m[3],+m[4]); used.push([m.index, re.lastIndex]); }
+  re = /(\d{1,2})\s*\/\s*(\d{1,2})\s*~\s*(\d{1,2})(?!\s*\/)/g;
+  while((m = re.exec(t))){ if(taken(m.index)) continue; addSpan(+m[1],+m[2],+m[1],+m[3]); used.push([m.index, re.lastIndex]); }
+  re = /(\d{1,2})\s*\/\s*(\d{1,2})/g;
+  while((m = re.exec(t))){ if(taken(m.index)) continue; addSpan(+m[1],+m[2],+m[1],+m[2]); }
+  return [...out];
+}
+
+function swCal(map, longRun){
+  // 기본 달: 이 브리핑의 기준일이 속한 달. 그 달에 행사가 없으면 행사가 가장 많은 달.
+  const all = Object.keys(map).concat((longRun||[]).reduce((a,o)=>a.concat(o.days), []));
+  if(!swMonth || !all.some(k => k.slice(0,7) === swMonth)){
+    const cur = String(sel[curP] || DATA.updatedAt || "").slice(0,7);
+    if(cur && all.some(k => k.slice(0,7) === cur)) swMonth = cur;
+    else {
+      const cnt = {};
+      all.forEach(k => { const mo = k.slice(0,7); cnt[mo] = (cnt[mo]||0) + 1; });
+      swMonth = Object.keys(cnt).sort((a,b) => cnt[b]-cnt[a] || a.localeCompare(b))[0] || cur || "2026-01";
+    }
+  }
+  const y = +swMonth.split("-")[0], mo = +swMonth.split("-")[1];
+  const startDow = new Date(y, mo-1, 1).getDay(), days = new Date(y, mo, 0).getDate();
+  let cells = "";
+  for(let i=0;i<startDow;i++) cells += `<span class="sw-day pad"></span>`;
+  for(let d=1; d<=days; d++){
+    const k = `${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const n = (map[k]||[]).length;
+    if(n) cells += `<button class="sw-day has${swSel===k?" sel":""}" data-sw-k="${k}" `
+      + `aria-label="${mo}월 ${d}일 행사 ${n}건" title="행사 ${n}건">`
+      + `<span class="d">${d}</span><span class="dots">${"•".repeat(Math.min(n,3))}</span></button>`;
+    else cells += `<span class="sw-day"><span class="d">${d}</span></span>`;
+  }
+  const inMonth = (longRun||[]).filter(o => o.days.some(k => k.slice(0,7) === swMonth));
+  const longLine = inMonth.length
+    ? `<div class="sw-long"><span class="lbl">이달 내내</span>${inMonth.map(o=>`<span class="chip">${esc(o.it.title.replace(/^[^'’]*['’]([^'’]+)['’].*$/, "$1").slice(0,24))}</span>`).join("")}</div>`
+    : "";
+  const dows = ["일","월","화","수","목","금","토"].map(d=>`<span class="dow">${d}</span>`).join("");
+  const foot = swSel
+    ? `<span><b>${+swSel.slice(5,7)}월 ${+swSel.slice(8,10)}일</b> 행사 ${(map[swSel]||[]).length}건</span><button class="sw-reset" data-sw-reset>전체 보기</button>`
+    : `<span>날짜를 누르면 그날 행사만 봅니다 · 점 하나가 행사 하나</span>`;
+  return `<div class="sw-cal">
+    <div class="sw-head"><button data-sw-nav="-1" aria-label="이전 달">◀</button><b>${y}년 ${mo}월</b><button data-sw-nav="1" aria-label="다음 달">▶</button></div>
+    ${longLine}
+    <div class="sw-grid">${dows}${cells}</div>
+    <div class="sw-foot">${foot}</div>
+  </div>`;
+}
+
 function renderArchbar(){
   const keys=Object.keys(archMap(curP)).sort().reverse();
   let html="";
@@ -6116,7 +6212,27 @@ function render(){
     }
   } else if(curC==="suwon"){
     const arr = s.suwon||[];
-    html = arr.length ? `<div class="subhead">수원시 행사·축제 — 시청·문화재단·공식 SNS·뉴스 종합</div><div class="cards">${arr.map(eventCard).join("")}</div>` : `<div class="empty">${sel[curP]?"이 날짜에는 수원 행사가 수집되지 않았습니다.":"수원 행사 정보가 아직 준비되지 않았습니다."}</div>`;
+    if(!arr.length){
+      html = `<div class="empty">${sel[curP]?"이 날짜에는 수원 행사가 수집되지 않았습니다.":"수원 행사 정보가 아직 준비되지 않았습니다."}</div>`;
+    } else {
+      const map = {}, undated = [], longRun = [];
+      arr.forEach(it=>{
+        const ks = swDates(it);
+        if(!ks.length){ undated.push(it); return; }
+        if(ks.length >= 14){ longRun.push({it, days: ks}); return; }   // 장기 행사는 칸을 다 채우지 않는다
+        ks.forEach(k=>{ (map[k] = map[k] || []).push(it); });
+      });
+      const dayItems = k => (map[k]||[]).concat(longRun.filter(o=>o.days.includes(k)).map(o=>o.it));
+      if(swSel && !map[swSel] && !longRun.some(o=>o.days.includes(swSel))) swSel = null;
+      const shown = swSel ? dayItems(swSel) : arr;
+      const listHead = swSel
+        ? `${+swSel.slice(5,7)}/${+swSel.slice(8,10)} 행사 ${shown.length}건`
+        : `수원시 행사·축제 ${arr.length}건 — 시청·문화재단·공식 SNS·뉴스 종합`;
+      html = `<div class="subhead">행사 달력 — 날짜별로 한눈에</div>`
+        + swCal(map, longRun)
+        + `<div class="subhead">${esc(listHead)}</div><div class="cards">${shown.map(eventCard).join("")}</div>`
+        + (!swSel && undated.length ? `<div class="sw-foot">기간이 특정되지 않은 ${undated.length}건은 달력에 표시되지 않습니다.</div>` : "");
+    }
   } else {
     const arr = s[curC]||[];
     html = arr.length ? `<div class="cards">${arr.map(newsCard).join("")}</div>` : `<div class="empty">${emptyMsg()}</div>`;
@@ -6150,6 +6266,19 @@ document.getElementById("archbar").addEventListener("click", e=>{
     render(); return;
   }
   if(b.dataset.k){ sel[curP]=b.dataset.k; render(); }
+});
+
+document.getElementById("content").addEventListener("click", e=>{
+  const nav = e.target.closest("[data-sw-nav]");
+  if(nav){
+    const y = +swMonth.split("-")[0], mo = +swMonth.split("-")[1]-1 + (+nav.dataset.swNav);
+    const d = new Date(y, mo, 1);
+    swMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    render(); return;
+  }
+  if(e.target.closest("[data-sw-reset]")){ swSel = null; render(); return; }
+  const day = e.target.closest("[data-sw-k]");
+  if(day){ swSel = (swSel === day.dataset.swK) ? null : day.dataset.swK; render(); return; }
 });
 
 renderTicker(); render();
