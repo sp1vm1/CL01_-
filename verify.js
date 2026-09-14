@@ -7,7 +7,7 @@ global.document={createElement:()=>({set textContent(v){this._t=v},get innerHTML
   getElementById:()=>el, querySelector:()=>el, querySelectorAll:()=>[]};
 eval(src + ';globalThis.DATA=DATA;');
 
-const T='2026-09-13', W='2026-09-07';
+const T=process.env.T||'2026-09-14', W='2026-09-07';
 let fail=0;
 const bad=(m)=>{console.log('FAIL: '+m);fail++;};
 const ok =(m)=>console.log('ok  : '+m);
