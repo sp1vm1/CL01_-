@@ -60,6 +60,49 @@ w = list(old_weekly); w[0] = 'DATA.archive.weekly["2026-08-31"] = {'; w[-1] = '}
 with io.open(NEWDATA, encoding="utf-8") as f:
     newdata = f.read().rstrip("\n").split("\n")
 
+# ── 렌더러·FORMAT NOTE 패치 (2026-09-14 수원 탭 추가). 각 앵커는 정확히 1회만 존재해야 한다 ──
+def patch(lines, anchor, replacement, name):
+    s = "\n".join(lines)
+    must(s.count(anchor) == 1, "patch anchor '%s' count=%d" % (name, s.count(anchor)))
+    return s.replace(anchor, replacement).split("\n")
+
+FORMAT_NOTE_ITEM7 = """   7. 수원 탭(2026-09-14 사용자 지시): sections.suwon 배열에 5~6건. 각 {title, summary, source, url, date, when(행사 일시 "9/18(금)~19(토) 17:30~21:30" 형태), place(장소)}.
+      소스 우선순위 ① 한국관광공사 TourAPI 행사/축제(areaCode 31·sigunguCode 13) ② 수원시청·수원문화재단 공지 ③ 인스타그램 공식 계정(@suwon_city·@suwoni_official·@suwon_sudc)은
+      반드시 Meta Graph API Business Discovery(토큰 IG_ACCESS_TOKEN·IG_USER_ID)로만 조회하고 스크래핑·로그인 자동화는 금지 ④ 뉴스 검색.
+      ①~③은 저장소의 suwon_events.py 한 번으로 시도하고, 도메인 차단·키 부재 시 ④로 대체한다. 지난 행사는 when 끝에 "(종료)"를 붙이고, 주간은 그 주 열린 행사 결과와 다음 주 예정을 섞는다.
+   ==== */"""
+head = patch(head, "   ==== */", FORMAT_NOTE_ITEM7, "format-note-end")
+
+renderer = patch(renderer,
+    '  {key:"christian", label:"기독교"},\n];',
+    '  {key:"christian", label:"기독교"},\n  {key:"suwon", label:"📍 수원"},\n];',
+    "cats")
+
+EVENT_CARD = '''function eventCard(it){
+  const meta=[
+    it.when?`<span class="chip">📅 ${esc(it.when)}</span>`:"",
+    it.place?`<span class="chip">📍 ${esc(it.place)}</span>`:"",
+    it.source?`<span>${esc(it.source)}</span>`:"",
+    it.date?`<span>${esc(it.date)}</span>`:"",
+    it.url?`<a class="link" href="${esc(it.url)}" target="_blank" rel="noopener">원문 보기 →</a>`:""
+  ].filter(Boolean).join("");
+  return `<article class="card">
+    <h3>${it.url?`<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title)}</a>`:esc(it.title)}</h3>
+    <p>${esc(it.summary)}</p>
+    <div class="meta">${meta}</div>
+  </article>`;
+}
+
+function spark(vals, dir, dates, priceStr){'''
+renderer = patch(renderer, "function spark(vals, dir, dates, priceStr){", EVENT_CARD, "event-card")
+
+SUWON_BRANCH = '''  } else if(curC==="suwon"){
+    const arr = s.suwon||[];
+    html = arr.length ? `<div class="subhead">수원시 행사·축제 — 시청·문화재단·공식 SNS·뉴스 종합</div><div class="cards">${arr.map(eventCard).join("")}</div>` : `<div class="empty">${sel[curP]?"이 날짜에는 수원 행사가 수집되지 않았습니다.":"수원 행사 정보가 아직 준비되지 않았습니다."}</div>`;
+  } else {
+    const arr = s[curC]||[];'''
+renderer = patch(renderer, "  } else {\n    const arr = s[curC]||[];", SUWON_BRANCH, "suwon-branch")
+
 out = []
 out += head
 out += newdata                # const DATA = { updatedAt, indices, periods{daily,weekly,

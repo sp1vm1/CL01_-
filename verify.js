@@ -66,8 +66,12 @@ for(const [label,p] of [['daily',DATA.periods.daily],['weekly',DATA.periods.week
   const banned=['총기','난사','살인','타살','투신','피살','흉기','추락사'];
   const hit=(s.buzz||[]).filter(x=>banned.some(w=>(x.title+x.summary+x.keyword).includes(w))).map(x=>x.keyword);
   hit.length?bad(label+' buzz 금칙어: '+hit):ok(label+' buzz 금칙어 없음 ('+(s.buzz||[]).length+'건)');
+  // (g) 수원 탭: 5건 이상, when/place/url 필수, url http
+  const sw=s.suwon||[];
+  const swbad=sw.filter(x=>!x.when||!x.place||!x.url||!/^https?:\/\//.test(x.url)||!x.title||!x.summary||!x.date).length;
+  (sw.length<5||swbad)?bad(label+' suwon 부족/필드누락 ('+sw.length+'건, 누락 '+swbad+')'):ok(label+' suwon '+sw.length+'건, when/place/url 모두 있음');
   // 빈 섹션
-  for(const k of ['buzz','politics','economy','entertainment','drama','variety','movies','christian']){
+  for(const k of ['buzz','politics','economy','entertainment','drama','variety','movies','christian','suwon']){
     if(!s[k]||!s[k].length) bad(label+' 섹션 비어있음: '+k);
   }
 }
