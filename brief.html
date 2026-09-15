@@ -6099,7 +6099,7 @@ function swCal(map, longRun){
     const n = (map[k]||[]).length;
     if(n) cells += `<button class="sw-day has${swSel===k?" sel":""}" data-sw-k="${k}" `
       + `aria-label="${mo}월 ${d}일 행사 ${n}건" title="행사 ${n}건">`
-      + `<span class="d">${d}</span><span class="dots">${"•".repeat(Math.min(n,3))}</span></button>`;
+      + `<span class="d">${d}</span><span class="dots">${n<=3 ? "•".repeat(n) : n+"건"}</span></button>`;
     else cells += `<span class="sw-day"><span class="d">${d}</span></span>`;
   }
   const inMonth = (longRun||[]).filter(o => o.days.some(k => k.slice(0,7) === swMonth));
@@ -6222,16 +6222,21 @@ function render(){
         if(ks.length >= 14){ longRun.push({it, days: ks}); return; }   // 장기 행사는 칸을 다 채우지 않는다
         ks.forEach(k=>{ (map[k] = map[k] || []).push(it); });
       });
-      const dayItems = k => (map[k]||[]).concat(longRun.filter(o=>o.days.includes(k)).map(o=>o.it));
-      if(swSel && !map[swSel] && !longRun.some(o=>o.days.includes(swSel))) swSel = null;
-      const shown = swSel ? dayItems(swSel) : arr;
-      const listHead = swSel
-        ? `${+swSel.slice(5,7)}/${+swSel.slice(8,10)} 행사 ${shown.length}건`
-        : `수원시 행사·축제 ${arr.length}건 — 시청·문화재단·공식 SNS·뉴스 종합`;
-      html = `<div class="subhead">행사 달력 — 날짜별로 한눈에</div>`
-        + swCal(map, longRun)
-        + `<div class="subhead">${esc(listHead)}</div><div class="cards">${shown.map(eventCard).join("")}</div>`
-        + (!swSel && undated.length ? `<div class="sw-foot">기간이 특정되지 않은 ${undated.length}건은 달력에 표시되지 않습니다.</div>` : "");
+      if(swSel && !map[swSel]) swSel = null;
+      // 달력의 점 개수 = '그날 행사' 건수. 기간 행사는 숫자에 섞지 않고 따로 붙인다.
+      let body;
+      if(swSel){
+        const day = map[swSel] || [];
+        const ongoing = longRun.filter(o => o.days.includes(swSel)).map(o => o.it);
+        body = `<div class="subhead">${+swSel.slice(5,7)}/${+swSel.slice(8,10)} 행사 ${day.length}건</div>`
+          + `<div class="cards">${day.map(eventCard).join("")}</div>`
+          + (ongoing.length ? `<div class="subhead">이 기간 계속되는 행사 ${ongoing.length}건</div><div class="cards">${ongoing.map(eventCard).join("")}</div>` : "");
+      } else {
+        body = `<div class="subhead">수원시 행사·축제 ${arr.length}건 — 시청·문화재단·공식 SNS·뉴스 종합</div>`
+          + `<div class="cards">${arr.map(eventCard).join("")}</div>`
+          + (undated.length ? `<div class="sw-foot">기간이 특정되지 않은 ${undated.length}건은 달력에 표시되지 않습니다.</div>` : "");
+      }
+      html = `<div class="subhead">행사 달력 — 날짜별로 한눈에</div>` + swCal(map, longRun) + body;
     }
   } else {
     const arr = s[curC]||[];
