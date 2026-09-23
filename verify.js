@@ -7,7 +7,7 @@ global.document={createElement:()=>({set textContent(v){this._t=v},get innerHTML
   getElementById:()=>el, querySelector:()=>el, querySelectorAll:()=>[]};
 eval(src + ';globalThis.DATA=DATA;');
 
-const T=process.env.T||'2026-09-14', W='2026-09-07';
+const T=process.env.T||'2026-09-14', W=process.env.W||'2026-09-07';
 let fail=0;
 const bad=(m)=>{console.log('FAIL: '+m);fail++;};
 const ok =(m)=>console.log('ok  : '+m);
@@ -77,6 +77,14 @@ for(const [label,p] of [['daily',DATA.periods.daily],['weekly',DATA.periods.week
   const gsHit=(s.buzz||[]).filter(x=>gossipRe.test(x.title+x.summary)).map(x=>x.keyword);
   spHit.length>1?bad(label+' buzz 스포츠 결과 '+spHit.length+'건(최대 1): '+spHit):ok(label+' buzz 스포츠 결과 '+spHit.length+'건');
   gsHit.length?bad(label+' buzz 연예 신변잡기: '+gsHit):ok(label+' buzz 신변잡기 없음');
+  // (k) buzz 정치: 나라가 뒤흔들릴 급(major:true)만 최대 1건. 재판·인사·순방·여야 공방은 정치 탭 몫
+  const polRe=/대통령|장관|총리|국회|의원|여당|야당|국민의힘|민주당|정당|선거|탄핵|계엄|특검|검찰|기소|재판|선고|징역|비서실장|개각|청문회|유엔총회|정상회담/;
+  const polHit=(s.buzz||[]).filter(x=>polRe.test(x.title+x.keyword));
+  const polMinor=polHit.filter(x=>x.major!==true).map(x=>x.keyword);
+  const polMajor=polHit.filter(x=>x.major===true).map(x=>x.keyword);
+  polMinor.length?bad(label+' buzz 정치(major 표시 없음): '+polMinor):
+    polMajor.length>1?bad(label+' buzz 국가적 정치 이슈 '+polMajor.length+'건(최대 1): '+polMajor):
+    ok(label+' buzz 정치 '+polMajor.length+'건'+(polMajor.length?' (major: '+polMajor+')':''));
   // 빈 섹션
   for(const k of ['buzz','politics','economy','entertainment','drama','variety','movies','christian','suwon']){
     if(!s[k]||!s[k].length) bad(label+' 섹션 비어있음: '+k);
