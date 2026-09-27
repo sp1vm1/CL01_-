@@ -70,8 +70,8 @@ for(const [label,p] of [['daily',DATA.periods.daily],['weekly',DATA.periods.week
   const sw=s.suwon||[];
   const swbad=sw.filter(x=>!x.when||!x.place||!x.url||!/^https?:\/\//.test(x.url)||!x.title||!x.summary||!x.date).length;
   (sw.length<5||swbad)?bad(label+' suwon 부족/필드누락 ('+sw.length+'건, 누락 '+swbad+')'):ok(label+' suwon '+sw.length+'건, when/place/url 모두 있음');
-  // (h) buzz 편성: 스포츠 경기 결과 최대 1건, 연예 신변잡기 0건
-  const sportsRe=/우승|준우승|결승|MVP|완파|연패|승리|타이틀|감독|대표팀|투어|리그/;
+  // (h) buzz 편성: 스포츠 경기 결과 최대 1건(월드컵·올림픽·아시안게임급만), 연예 신변잡기 0건
+  const sportsRe=/우승|준우승|결승|MVP|완파|연패|승리|타이틀|감독|대표팀|투어|리그|금메달|메달|아시안게임|올림픽|월드컵/;
   const gossipRe=/아들|딸|자녀|남편|아내|열애|결혼식|사진 공개|사진첩|근황|일상 공개/;
   const spHit=(s.buzz||[]).filter(x=>sportsRe.test(x.title+x.keyword)).map(x=>x.keyword);
   const gsHit=(s.buzz||[]).filter(x=>gossipRe.test(x.title+x.summary)).map(x=>x.keyword);
